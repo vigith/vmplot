@@ -49,12 +49,51 @@ void test_convert_epoch_to_time(void **state) {
   return;
 }
 
+/* test all the time formats */
+void test_all_time_format_conversions(void **state) {
+  char *time_strings[] = {
+    "2016-05-11 09:11:28 AM",
+    "2016-05-11 09:11:28",
+    "2016-05-11",
+    "2016 05 11",
+    "09:11:28 AM",
+    "09:11:28",
+    "1462983088",
+  };
+  time_t epoch = -1;
+  int index;
+  char *time_str = NULL;
+  char buf[255];
+  size_t time_strings_cnt = sizeof(time_strings) / sizeof(char *);
+  int i = 0;
+
+  /* test of all the given time strings */
+  for (i = 0; i< time_strings_cnt; i++) {
+    time_str = time_strings[i];
+    index = get_format_for_time(time_str);
+    epoch = convert_time_to_epoch(time_str, index, NULL);
+    convert_epoch_to_time(epoch, index, NULL, buf, sizeof(buf));
+    assert_string_equal(time_str, buf);    
+  }
+
+
+  /* do a reverse conversion for all the given time strings */
+  for (i = time_strings_cnt - 1; i > 0; i--) {
+    time_str = time_strings[i];
+    index = get_format_for_time(time_str);
+    epoch = convert_time_to_epoch(time_str, index, NULL);
+    convert_epoch_to_time(epoch, index, NULL, buf, sizeof(buf));
+    assert_string_equal(time_str, buf);    
+  }
+}
+
 int main(int argc, char *argv[]) {
   const UnitTest tests[] = {
     unit_test(get_the_longest_time_format),
     unit_test(get_the_last_time_format),
     unit_test(test_convert_time_to_epoch),
     unit_test(test_convert_epoch_to_time),
+    unit_test(test_all_time_format_conversions),
   };
   return run_tests(tests);
 }
