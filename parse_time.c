@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE           /* else, i will get "cast to pointer from integer of different size for strptime" */
+#define _XOPEN_SOURCE
 
 #include "parse_time.h"
 
@@ -170,13 +170,3 @@ int convert_epoch_to_time(time_t epoch, int index, const char *time_fmt, char *t
   return retcode;
 }
 
-/*
-int main(void) {
-  int index;
-  index = get_format_for_time("2001-11-12 18:31:01");
-  printf("%d\n", index);
-  index = get_format_for_time("18:31:01 PM");
-  printf("%d\n", index);
-  return 0;
-}
-*/
