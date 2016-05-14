@@ -87,6 +87,7 @@ void test_all_time_format_conversions(void **state) {
   }
 }
 
+/* start the tests */
 int main(int argc, char *argv[]) {
   const UnitTest tests[] = {
     unit_test(get_the_longest_time_format),
@@ -98,3 +99,5 @@ int main(int argc, char *argv[]) {
   return run_tests(tests);
 }
 
+
+// gcc -I /usr/local/include/google/ -lcmockery vmplot.h parse_time.h parse_time.c parse_time_test.c -o parse_time && ./parse_time  
