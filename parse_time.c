@@ -78,7 +78,7 @@ time_t convert_time_to_epoch(const char *time_str, int index, const char *time_f
   
   /* we look into hint only if time_fmt == NULL */
   if ((index < 0 || index >= time_format_hint_cnt) && time_fmt == NULL) {
-    set_error(ERANGE, "Out of Bound Index");
+    set_error(E_VM_RANGE, "Out of Bound Index");
     return epoch;
   }
 
@@ -92,7 +92,7 @@ time_t convert_time_to_epoch(const char *time_str, int index, const char *time_f
   status = (char *)strptime(time_str, time_format, &tm);
   /* if parsing fails, return early */
   if (status == NULL) {
-    set_error(EPARSETIME, "Cannot Parse Time");
+    set_error(E_VM_PARSETIME, "Cannot Parse Time");
     return epoch;
   }
 
@@ -109,7 +109,7 @@ time_t convert_time_to_epoch(const char *time_str, int index, const char *time_f
   epoch = mktime(&tm);
   
   if (epoch == -1) {            /* mktime failed */
-    set_error(ETIMECONV, "Convert to Epoch Failed");
+    set_error(E_VM_TIMECONV, "Convert to Epoch Failed");
     return epoch;
   }
 
@@ -125,12 +125,12 @@ time_t convert_time_to_epoch(const char *time_str, int index, const char *time_f
     - pointer to string where the time will be stored (callee should allocate the memory)
     - size of the string where time will be store
    Returns:
-    - 0 for Failure
-    - 1 for Success
+    - FAILURE
+    - SUCCESS
    ERROR: will set vmplot_errno and vmplot_errstr on error
 */
 int convert_epoch_to_time(time_t epoch, int index, const char *time_fmt, char *time_str, size_t time_str_sz) {
-  int retcode = 0;              /* return code */
+  int retcode = FAILURE;        /* return code */
   char *time_format = NULL;     /* ptr to time format */
   size_t status = -1;           /* strftime result */
 
@@ -140,7 +140,7 @@ int convert_epoch_to_time(time_t epoch, int index, const char *time_fmt, char *t
   clr_error();
 
   if((index < 0 && index >= time_format_hint_cnt) && time_fmt == NULL) {
-    set_error(ERANGE, "Out of Bound Index");
+    set_error(E_VM_RANGE, "Out of Bound Index");
     return retcode;
   }
 
@@ -153,17 +153,17 @@ int convert_epoch_to_time(time_t epoch, int index, const char *time_fmt, char *t
   /* from epoch populate tm struct */
   tm = (struct tm*)localtime(&epoch);
   if (tm == NULL) {
-    set_error(ETIMECONV, "Populating tm from epoch Failed ");
+    set_error(E_VM_TIMECONV, "Populating tm from epoch Failed ");
     return retcode;
   }
   
   /* convert tm struct to time */
   status = strftime(time_str, time_str_sz, time_format, tm);
   if (status == 0) {            /* actually == 0 is not an error, %p returns empty as per strftime(3) */
-    set_error(ETIMEFMT, "Time Format Failed");
+    set_error(E_VM_TIMEFMT, "Time Format Failed");
     return retcode;
   } else {
-    retcode = 1;                /* formatting succeeded */
+    retcode = SUCCESS;                /* formatting succeeded */
   }
 
   /* return the return code */
