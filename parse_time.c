@@ -62,7 +62,7 @@ unsigned int get_format_for_time(const char *time_str) {
     - time format (if NULL, then set index)
    Returns:
     - epoch in seconds (> -1)
-    - 0 for failure
+    - -1 for failure
    ERROR: will set vmplot_errno and vmplot_errstr on error
  */
 time_t convert_time_to_epoch(const char *time_str, int index, const char *time_fmt) {
