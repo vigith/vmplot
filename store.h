@@ -24,6 +24,18 @@ typedef enum {
   TIME,                         /* time (epoch) */
 } data_type;
 
+/* types of axes for labelling.
+   labels will be inferred from the max and min 
+   values of each axis. (for y it will be min and max
+   w.r.t all the data points, since we have multiple
+   data points for y) */
+typedef enum {
+  X_TOP   = (1 << 0),
+  X_DOWN  = (1 << 1),
+  Y_LEFT  = (1 << 2),
+  Y_RIGHT = (1 << 3),
+} label_axis; 
+
 /* each datum (data point) */
 typedef struct {
   void *value;                  /* the real data */
@@ -32,34 +44,38 @@ typedef struct {
 /* basic data store info */
 typedef struct {
   data_type d_type;        /* data type */
-  trf_fn t_fn_ptr;         /* transformation function pointers  */
+  trf_fn *t_fn_ptr;         /* transformation function pointers  */
   int current_idx;         /* current index */
   void *max;               /* maximum value, depends on "data type" */
   void *min;               /* minimum value, depends on "data type" */
   int color[3];            /* RGB color */
   char plot;               /* plot char */
+  label_axis l_axis;       /* label axis */
 } info;
 
 /* x axis will have a data ptr to all the y data sets */
 typedef struct {
-  datum value;                  /* value of xaxis point */
-  int index[];                  /* index of each y data set */
+  datum *val;     /* value of xaxis point */
+  int *index_arr; /* index of each y data set, pointer to integer array */
 } table;
 
 /* x axis */
 typedef struct {
   info *xinfo;
-  table row[];                  /* all the data for x axis */
+  table *row;                  /* all the data for x axis */
 } xaxis;
 
 /* y axis data sets */
 typedef struct {
   info *yinfo;
-  datum value[];                /* all the data for y axis */
+  datum *val;                   /* all the data for y axis */
 } yaxis;
 
 /* the store for the data points */
 typedef struct {
-  xaxis *x;
-  yaxis *y[];                  /* multiple lines can be drawn against the same xaxis */
+  int axes; /* how many do we have for x and y (set by using label_axis) */
+  xaxis *x_down;
+  xaxis *x_top;
+  yaxis **y_left_arr;               /* pointer to pointer of array */
+  yaxis **y_right_arr;
 } store;
