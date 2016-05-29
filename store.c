@@ -40,7 +40,7 @@ static int init_yaxis(yaxis ***_y, int y_cnt) {
 
   /* for each ptr in the array, intialize the yaxis plot */
   for(i = 0; i < y_cnt; i++) {
-    y[i] = (yaxis *)malloc(sizeof(yaxis) * VM_ARRAY_SZ); /* now y[i] and (*_y)[i] points same yaxis */
+    y[i] = (yaxis *)malloc(sizeof(yaxis)); /* now y[i] and (*_y)[i] points to same yaxis */
     if (y[i] == NULL) {
       set_error(E_VM_MALLOC, "(malloc) **yaxis Failed");
       retcode = FAILURE;
@@ -48,9 +48,25 @@ static int init_yaxis(yaxis ***_y, int y_cnt) {
     }
   }
 
-  if(retcode = SUCCESS)
+  /* for each y-axis plot, create the space to store points */
+  for(i = 0; i < y_cnt; i++) {
+    y[i]->val = (datum *)malloc(sizeof(datum) * VM_ARRAY_SZ); /* now y[i]->val and (*_y)[i]->val points to same yaxis datum */
+    if (y[i]->val == NULL) {
+      set_error(E_VM_MALLOC, "(malloc) **yaxis->val Failed");
+      retcode = FAILURE;
+      goto yaxisvalfail;
+    }
+  }
+    
+  if(retcode == SUCCESS)
     return retcode;
 
+ yaxisvalfail:
+  /* decrement first, because i failed, only i-- has valid ptr */
+  for(i--; i >= 0; i--) {          /* free the opposite way */
+    free(y[i]->val);
+  }
+  
  yaxisptrfail:
   /* decrement first, because i failed, only i-- has valid ptr */
   for(i--; i >= 0; i--) {          /* free the opposite way */
@@ -153,6 +169,12 @@ static int init_axis(void) {
     if (status == FAILURE)
       goto axisfail;
   }
+  /* Y_RIGHT */
+  if (st->axes & Y_RIGHT) {
+    status = init_yaxis(&st->y_right_arr, d_yright_cnt);
+    if (status == FAILURE)
+      goto axisfail;
+  }
   
  axisfail:
   return retcode;
@@ -198,8 +220,10 @@ static int init_store(void) {
 /* destroy y-axis */
 static void destroy_yaxis(yaxis **y, int count) {
   int i;
-  for(i = 0; i < count; i++)    /* we need to clean the array pointed by the ptr */
+  for(i = 0; i < count; i++) {  /* we need to clean the array pointed by the ptr */
+    free(y[i]->val);
     free(y[i]);
+  }
   free(y);
 }
 
