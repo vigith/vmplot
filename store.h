@@ -2,6 +2,7 @@
 
 #include "vmplot.h"
 
+
 /* tranformation functions */
 /* input tranfsorm */
 typedef void (*input_fn)(void **);
@@ -30,8 +31,8 @@ typedef enum {
    w.r.t all the data points, since we have multiple
    data points for y) */
 typedef enum {
-  X_TOP   = (1 << 0),
-  X_DOWN  = (1 << 1),
+  X_DOWN  = (1 << 0),
+  X_TOP   = (1 << 1),
   Y_LEFT  = (1 << 2),
   Y_RIGHT = (1 << 3),
 } label_axis; 
@@ -43,8 +44,9 @@ typedef struct {
 
 /* basic data store info */
 typedef struct {
+  char name[48];           /* name of the field */
   data_type d_type;        /* data type */
-  trf_fn *t_fn_ptr;         /* transformation function pointers  */
+  trf_fn *t_fn_ptr;        /* transformation function pointers  */
   int current_idx;         /* current index */
   void *max;               /* maximum value, depends on "data type" */
   void *min;               /* minimum value, depends on "data type" */
@@ -56,18 +58,18 @@ typedef struct {
 /* x axis will have a data ptr to all the y data sets */
 typedef struct {
   datum *val;     /* value of xaxis point */
-  int *index_arr; /* index of each y data set, pointer to integer array */
+  int *index_arr; /* index of each y data set, pointer to integer array (index is smaller, but ptr will be faster) */
 } table;
 
 /* x axis */
 typedef struct {
-  info *xinfo;
-  table *row;                  /* all the data for x axis */
+  info xinfo;
+  table row;                    /* all the data for x axis */
 } xaxis;
 
 /* y axis data sets */
 typedef struct {
-  info *yinfo;
+  info yinfo;
   datum *val;                   /* all the data for y axis */
 } yaxis;
 
@@ -79,3 +81,10 @@ typedef struct {
   yaxis **y_left_arr;               /* pointer to pointer of array */
   yaxis **y_right_arr;
 } store;
+
+
+
+/***********/
+/* GLOBALS */
+/***********/
+extern store *st;
