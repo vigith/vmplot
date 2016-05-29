@@ -37,10 +37,6 @@ typedef enum {
   Y_RIGHT = (1 << 3),
 } label_axis; 
 
-/* each datum (data point) */
-typedef struct {
-  void *value;                  /* the real data */
-} datum;
 
 /* basic data store info */
 typedef struct {
@@ -54,6 +50,11 @@ typedef struct {
   char plot;               /* plot char */
   label_axis l_axis;       /* label axis */
 } info;
+
+/* each datum (data point) */
+typedef struct {
+  void *value;                  /* the real data */
+} datum;
 
 /* x axis will have a data ptr to all the y data sets */
 typedef struct {
