@@ -259,6 +259,7 @@ static void destroy_store(void) {
   free(st);
 }
 
+// gcc vmplot.h store.h store.c getopts.c -o store && ./store
 int main(void) {
   int status;
   status = init_store();
