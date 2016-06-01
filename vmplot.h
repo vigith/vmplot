@@ -17,6 +17,7 @@
 #define E_VM_TIMECONV  3          /* cannot do time conversion */
 #define E_VM_TIMEFMT   4          /* time formatting failed */
 #define E_VM_MALLOC    5          /* malloc failed */
+#define E_VM_WRONGVAL  6          /* wrong value in the variable */
 
 /* any system that sets error code, should call clr_error before processing */
 #define clr_error() do { vmplot_errno = 0; vmplot_errstr[0] = '\0'; } while (0)
@@ -34,9 +35,10 @@ char vmplot_errstr[128];
 
 /* options */
 extern int opt_fields;          /* how many plots to make */
-extern int opt_axes;            /* foo */
+extern char *opt_data2axis;     /* data to axis mapping */
 /* derived values from options */
-extern int d_xdown_y;           /* how many y variables are plotted againx xdown */
-extern int d_xtop_y;            /* how many y variables are plotted againx xtop */
+extern int d_xdown_y;           /* number of y variables are plotted againx xdown */
+extern int d_xtop_y;            /* number of y variables are plotted againx xtop */
 extern int d_yleft_cnt;         /* Y-left plot count */
 extern int d_yright_cnt;        /* Y-right plot count */
+extern int d_axes;              /* axes which are used (derived from opt_data2axis) */
