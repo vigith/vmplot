@@ -13,7 +13,9 @@ void set_label_axis(int *axes) {
 /* intialize the Y-Axis
    The fuction will free all the allocated memory that happened
    in this fuction if there is an error.
-   Args: None
+   Args: 
+    - ***yaxis (left or right)
+    - number of plots in y-axis
    Returns:
     - SUCCESS
     - FAILURE
@@ -82,7 +84,9 @@ static int init_yaxis(yaxis ***_y, int y_cnt) {
 /* intialize the X-Axis
    The fuction will free all the allocated memory that happened
    in this fuction if there is an error.
-   Args: None
+   Args: 
+    - **xaxis (down or top)
+    - number of y axis to be plotted against x-axis
    Returns:
     - SUCCESS
     - FAILURE
@@ -187,10 +191,17 @@ static int init_axis(void) {
     - FAILURE
    ERROR: will set vmplot_errno and vmplot_errstr on error
  */
-static int init_store(void) {
+int init_store(void) {
   int retcode  = SUCCESS;
   /* clear error */
   clr_error();
+
+  /* make sure we don't end up in duplicate store creation, singleton? */
+  if (st != NULL) {
+    set_error(E_VM_WRONGVAL, "duplicate store creation");
+    retcode = FAILURE;
+    goto storefail;
+  }
 
   /* create the store */
   st = (store *)malloc(sizeof(store));
@@ -208,10 +219,9 @@ static int init_store(void) {
   
   /* set the axes count */
   set_label_axis(&st->axes);
+  
   /* initialize each axis */
-  init_axis();
-
-  printf("%d\n",sizeof(*st));
+  retcode = init_axis();
 
  storefail:
   return retcode;
@@ -254,10 +264,13 @@ static void destroy_axis(void) {
 }
 
 /* destory the store */
-static void destroy_store(void) {
+void destroy_store(void) {
   destroy_axis();
   free(st);
 }
+
+
+/* dump the store */
 
 // gcc vmplot.h store.h store.c getopts.c -o store && ./store
 int main(void) {
