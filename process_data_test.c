@@ -6,9 +6,9 @@
 
 void create_data2axis_arr(void **state) {
   int i;
-  data2axis = (int *)malloc(sizeof(int) * 10); /* don't test for more than 10 elements, 10 should be replaced by opt_fields */
-  bzero(data2axis, sizeof(int) * 10);
-  *state = (int *)data2axis;
+  data2axis = (long *)malloc(sizeof(long) * 10); /* don't test for more than 10 elements, 10 should be replaced by opt_fields */
+  bzero(data2axis, sizeof(long) * 10);
+  *state = (long *)data2axis;
   return;
 }
 
