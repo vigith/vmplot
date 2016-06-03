@@ -1,7 +1,7 @@
 #include "vmplot.h"
 #include "store.h"
 
-/* integer array which contains which axis each field goes to and which index to keep
+/* long int array which contains which axis each field goes to and which index to keep
    for each field (ie, "D;L:D,L:D" means first field is X_DOWN and should be kepth at 
    index 0, second is Y_LEFT and kept at index 0, 3rd is Y_LEFT and kept at index 1.)
    each field in data2axis array is of 3 main parts
@@ -10,5 +10,6 @@
       means we can not have more than 16 plots for left or right y axis)
     - last 8 bits is to show whether data is plotted again X_DOWN or X_TOP (useful
       only for Y_LEFT and Y_RIGHT)
+   XXX: ffs is used to find the right most set bit.
 */
-int *data2axis;
+long *data2axis;

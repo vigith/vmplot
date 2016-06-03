@@ -103,18 +103,67 @@ int set_data2axis(void) {
 }
 
 
-/*
+/* Sets the header or name of the axis in info struct
+   Args: 
+    - Array of character strings
+   Returns:
+    - SUCCESS
+    - FAILURE
+   ERROR: will set vmplot_errno and vmplot_errstr on error
+   XXX: name/header cannot be more more than X bytes (check info 
+        struct in store.h)
+*/
+int set_store_axis_header(const char **fields) {
+  int i = 0;
+  char _errstr[128];
+  clr_error();
+  /* for each opt_field, take the str in **fields and set the name in info struct */
+  for (i = 0; i < opt_fields; i++) {
+    if (data2axis[i] & X_DOWN) {
+      strcpy(st->x_down->xinfo.name, fields[i]);
+    } else if (data2axis[i] & X_TOP) {
+      strcpy(st->x_top->xinfo.name, fields[i]);
+    } else if (data2axis[i] & Y_LEFT) {
+      /* we know that data2axis[i] >> 8 should be a +ve number > 0 (--1 to make it an array index)  */
+      strcpy(st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.name, fields[i]);
+    } else if (data2axis[i] & Y_RIGHT) {
+      strcpy(st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.name, fields[i]);
+    } else {
+      sprintf(_errstr, "wrong axis set at data2axis[%d]", i);
+      set_error(E_VM_WRONGVAL, _errstr);
+    }
+  }
+
+  return;
+}
+
+// test main
 int main(void) {
   int status;
   int i;
+  const char *header[] = { "foo", "bar", "moo" };
+  // init store
+  status = init_store();
+  if (status == FAILURE) {
+    printf("ERROR: %s\n", vmplot_errstr);
+    return 1;
+  }
   // create space for data2axis
-  data2axis = (int *)malloc(sizeof(int) * opt_fields);
-  bzero(data2axis, sizeof(int) * opt_fields);
+  data2axis = (long *)malloc(sizeof(long) * opt_fields);
+  bzero(data2axis, sizeof(long) * opt_fields);
+  // set axis
   status = set_data2axis();
   for(i=0; i<opt_fields; i++) {
     printf("%d\n", data2axis[i]);
   }
+  // set store_axis_header
+  set_store_axis_header(header);
+  yaxis **j = st->y_left_arr + 0;
+  printf("%s %p %p %s \n",(*j)->yinfo.name, j, &st->y_left_arr[0], st->y_left_arr[0]->yinfo.name );
+  // free
   free(data2axis);
+  /* destroy the store */
+  destroy_store();
   return 0;
 }
-*/
+
