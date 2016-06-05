@@ -2,6 +2,8 @@
 
 #include "process_data.h"
 
+long *data2axis;
+
 /* set the values in data2axis int array using the values
    in opt_data2axis. 
    Args: None
@@ -52,9 +54,11 @@ int set_data2axis(void) {
     if (*tokenptr == 'D') {                       /* X_DOWN */
       data2axis[field++] |= (X_DOWN | (xd << 8)); /* we don't use the MSB actually */
       // xd <<= 1; // XXX: we have single array, no point in incrementing, so we will always use the last defined X_DOWN
+      d_xdown_cnt++;
     } else if (*tokenptr == 'T') { /* X_TOP */
       data2axis[field++] |= (X_TOP | (xt << 8));
       // xt <<= 1; // XXX: we have single array, no point in incrementing, so we will always use the last defined X_DOWN
+      d_xtop_cnt++;
     } else if (*tokenptr == 'L') { /* Y_LEFT */
       /* we assume we will get :D or :T after this */
       if (tokenptr+1 != NULL && *(tokenptr+1) == ':' && tokenptr+2 != NULL) {
@@ -70,7 +74,8 @@ int set_data2axis(void) {
         set_error(E_VM_WRONGVAL, "opt_data2axis expected : D/T");
         break;
       }
-      yl <<= 1;               /* move the next index Y_LEFT */
+      yl <<= 1;                    /* move the next index Y_LEFT */
+      d_yleft_cnt++;
     } else if (*tokenptr == 'R') { /* Y_RIGHT */
       /* we assume we will get :D or :T after this */
       if (tokenptr+1 != NULL && *(tokenptr+1) == ':' && tokenptr+2 != NULL) {
@@ -87,6 +92,7 @@ int set_data2axis(void) {
         break;
       }
       yr <<= 1;                 /* move the next index for Y_RIGHT */
+      d_yright_cnt++;
     } else {
       set_error(E_VM_WRONGVAL, "opt_data2axis exptected D/T/L/R");
       break;
@@ -98,7 +104,7 @@ int set_data2axis(void) {
   
   /* free the tmpstr allocation */
   free(tmpstr);
-
+  
   return retcode;
 }
 
@@ -142,24 +148,23 @@ int main(void) {
   int status;
   int i;
   const char *header[] = { "foo", "bar", "moo" };
+  // create space for data2axis
+  data2axis = (long *)malloc(sizeof(long) * opt_fields);
+  bzero(data2axis, sizeof(long) * opt_fields);
+  // set axis
+  status = set_data2axis();
+  
   // init store
   status = init_store();
   if (status == FAILURE) {
     printf("ERROR: %s\n", vmplot_errstr);
     return 1;
   }
-  // create space for data2axis
-  data2axis = (long *)malloc(sizeof(long) * opt_fields);
-  bzero(data2axis, sizeof(long) * opt_fields);
-  // set axis
-  status = set_data2axis();
-  for(i=0; i<opt_fields; i++) {
-    printf("%d\n", data2axis[i]);
-  }
   // set store_axis_header
   set_store_axis_header(header);
-  yaxis **j = st->y_left_arr + 0;
-  printf("%s %p %p %s \n",(*j)->yinfo.name, j, &st->y_left_arr[0], st->y_left_arr[0]->yinfo.name );
+  dump_store();
+  //  yaxis **j = st->y_left_arr + 0;
+  //printf("%s %p %p %s \n",(*j)->yinfo.name, j, &st->y_left_arr[0], st->y_left_arr[0]->yinfo.name );
   // free
   free(data2axis);
   /* destroy the store */
