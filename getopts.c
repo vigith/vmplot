@@ -10,5 +10,9 @@ int d_axes   = 0;               /* TODO: use in set_label_axis */
 /* TODO: derive from opt_data2axis */
 int d_xdown_y = 3;
 int d_xtop_y = 0;
-int d_yleft_cnt = 3;
-int d_yright_cnt = 0;
+
+/* derived by set_data2axis */
+int d_xdown_cnt = 0;            /* how many x down */
+int d_xtop_cnt = 0;             /* how many x top */
+int d_yleft_cnt = 0;            /* how many y left */
+int d_yright_cnt = 0;           /* how many y right */

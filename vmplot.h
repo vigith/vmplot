@@ -39,6 +39,8 @@ extern char *opt_data2axis;     /* data to axis mapping */
 /* derived values from options */
 extern int d_xdown_y;           /* number of y variables are plotted againx xdown */
 extern int d_xtop_y;            /* number of y variables are plotted againx xtop */
+extern int d_xdown_cnt;         /* X-down plot count */
+extern int d_xtop_cnt;          /* X-top plot count */
 extern int d_yleft_cnt;         /* Y-left plot count */
 extern int d_yright_cnt;        /* Y-right plot count */
 extern int d_axes;              /* axes which are used (derived from opt_data2axis) */
