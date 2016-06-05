@@ -271,8 +271,29 @@ void destroy_store(void) {
 
 
 /* dump the store */
+void dump_store(void) {
+  int i;
+  int cnt;
+  fprintf(stderr, "---------------------------------- Store Dump ----------------------------------\n");
+  fprintf(stderr, "Fields: [%d] X_TOP-to-Y: [%d] X_DOWN-to-Y: [%d]\n", opt_fields, d_xdown_y, d_xtop_y);
+  fprintf(stderr, "X_DOWN: [%d] X_TOP: [%d] Y_LEFT: [%d] Y_RIGHT: [%d]\n", d_xdown_cnt, d_xtop_cnt, d_yleft_cnt, d_yright_cnt);
+  /* header */
+  cnt = d_xdown_cnt;
+  while(cnt--) { fprintf(stderr, "%10s:xd",st->x_down->xinfo.name);}
+  i = 0;
+  cnt = d_yleft_cnt;
+  while(cnt--) { fprintf(stderr, "%10s:yl",st->y_left_arr[i++]->yinfo.name); }
+  cnt=d_xtop_cnt;
+  while(cnt--) { fprintf(stderr, "%10s:yl",st->x_top->xinfo.name);}
+  i = 0;
+  cnt=d_yright_cnt;
+  while(cnt--) { fprintf(stderr, "%10s:yr",st->y_right_arr[i++]->yinfo.name); }
+  fprintf(stderr, "\n");
+  return;
+}
 
 // gcc vmplot.h store.h store.c getopts.c -o store && ./store
+/*
 int main(void) {
   int status;
   status = init_store();
@@ -280,3 +301,4 @@ int main(void) {
     destroy_store();
   return 0;
 }
+*/
