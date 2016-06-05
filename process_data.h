@@ -12,4 +12,4 @@
       only for Y_LEFT and Y_RIGHT)
    XXX: ffs is used to find the right most set bit.
 */
-long *data2axis;
+extern long *data2axis;
