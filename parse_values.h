@@ -1,6 +1,7 @@
 #include "vmplot.h"
+#include "parse_time.h"
 
-extern int base;
+extern int base;                /* base for strtol */
 
 extern int islong(const char *);
 extern int isfloat(const char *);

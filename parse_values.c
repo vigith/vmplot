@@ -36,12 +36,12 @@ int istime(const char *value, const char *fmt) {
   /* if fmt is NULL, we will try to get a format */
   if (fmt == NULL) {
     status = get_format_for_time(value); /* try to get a matching format */
-    if (status == ~0U) {                             /* oops, we didn't get one */
+    if (status == ~0U) {                 /* oops, we didn't get one */
       return retcode;
     } else {
       retcode = SUCCESS;
     }
-  } else {                      /* we are given a format */
+  } else {                      /* we have given a format */
     if (convert_time_to_epoch(value, -1, fmt) == -1) {
       return retcode;
     } else {
