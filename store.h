@@ -5,9 +5,9 @@
 
 /* tranformation functions */
 /* input tranfsorm */
-typedef void (*input_fn)(void **);
+typedef void (*input_fn)(void **); /* data */
 /* output tranfsorm */
-typedef void (*output_fn)(void **);
+typedef void (*output_fn)(void **); /* data */
 
 /* struct holding all the transformation functions for each data point */
 typedef struct {
@@ -42,7 +42,7 @@ typedef enum {
 typedef struct {
   char name[48];           /* name of the field */
   data_type d_type;        /* data type */
-  trf_fn *t_fn_ptr;        /* transformation function pointers  */
+  trf_fn t_fns;            /* transformation functions  */
   int current_idx;         /* current index */
   void *max;               /* maximum value, depends on "data type" */
   void *min;               /* minimum value, depends on "data type" */
@@ -89,3 +89,4 @@ typedef struct {
 /* GLOBALS */
 /***********/
 extern store *st;
+

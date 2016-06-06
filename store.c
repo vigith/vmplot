@@ -288,7 +288,7 @@ void dump_store(void) {
   i = 0;
   cnt=d_yright_cnt;
   while(cnt--) { fprintf(stderr, "%10s:yr",st->y_right_arr[i++]->yinfo.name); }
-  fprintf(stderr, "\n");
+  fprintf(stderr, "\n");        /* newline after header */
   return;
 }
 
