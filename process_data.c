@@ -4,6 +4,9 @@
 
 long *data2axis;
 
+void foo(void **tmp) {
+}
+
 /* set the values in data2axis int array using the values
    in opt_data2axis. 
    Args: None
@@ -143,11 +146,101 @@ int set_store_axis_header(const char **fields) {
   return;
 }
 
+/* Sets the function pointers for each field that can do
+   the input and output transformation. It will also set
+   the data_type in the store.
+   Args: 
+    - pointer to input transformation args
+    - pointer to output transformation args
+   Returns:
+    - SUCCESS
+    - FAILURE
+   ERROR: will set vmplot_errno and vmplot_errstr on error
+*/
+int set_store_axis_fnargs(char **in_hint_args, char **out_hint_args, const char **in_fields) {
+  int i;
+  int status;
+  char *hint;                   /* <TYPE>[:<FORMAT>] */
+  char tmphint[128];            /* copy of the hint */
+  char *type;                   /* TIME or FLOAT or LONG */
+  char *sep;                    /* fmt separator */
+  char *fmt;                    /* format */
+  data_type dt;                 /* data type */
+  char _errstr[128];            /* error string for fmt'ing */
+  /* clear error */
+  clr_error();
+
+  /* for each field, i can also index data2axis for each field */
+  for (i = 0; i < opt_fields; i++) {
+    if (d_in_field_hints[i] != NULL) {
+      hint = d_in_field_hints[i];
+      strcpy(tmphint, hint);    /* copy to a tmp buf, we do inplace manipulation */
+      sep = strchr(tmphint, VM_FLD_FMT_SEP); /* find the separator, it might be absent */
+      type = tmphint;           /* type = the first part till the separator (later we replace separator with \0) */
+      if (sep == NULL) {
+        fmt = NULL;             /* no format, since separator is NULL  */
+      } else {
+        fmt = sep + 1;          /* format is the next char after the separator */
+        *sep = '\0';            /* replace separator by \0 */
+      }
+      /* set the arg in the in_fields array */
+      if (fmt != NULL) {
+        in_hint_args[i] = (char *)malloc(sizeof(char) * strlen(type));
+        if (in_hint_args[i] == NULL) { /* malloc failed */
+          set_error(E_VM_MALLOC, "in_hint_args malloc failed");
+          return FAILURE;       /* callee will do the free */
+        }
+        strcpy(in_hint_args[i], fmt);
+        fmt = NULL;
+      }
+      /* set the data type */
+      if (strcmp(type, "LONG") == 0) dt = LONG;
+      else if (strcmp(type, "FLOAT") == 0) dt = FLOAT;
+      else if (strcmp(type, "TIME") == 0) dt = TIME;
+    } else {         /* no hint found, lets try to find out ourselves */
+      if (status = islong(in_fields[i])) {
+        dt = LONG;
+      } else if (status = isfloat(in_fields[i])) {
+        dt = FLOAT;
+      } else if (status = istime(in_fields[i], NULL)) {
+        dt = TIME;
+        get_format_for_time_ptr(in_fields[i], &in_hint_args[i]);
+        fmt = NULL;
+      } else {
+        set_error(E_VM_WRONGVAL, "cannot assign fnptr");
+        return FAILURE;
+      }
+    }
+      
+    /* set the data_type on the store */
+    if (data2axis[i] & X_DOWN) {
+      st->x_down->xinfo.d_type = dt;
+      st->x_down->xinfo.t_fns.i_fn = foo;
+    } else if (data2axis[i] & X_TOP) {
+      st->x_top->xinfo.d_type = dt;
+    } else if (data2axis[i] & Y_LEFT) {
+      st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.d_type = dt;
+    } else if (data2axis[i] & Y_RIGHT) {
+      st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.d_type = dt;
+    } else {
+      sprintf(_errstr, "wrong axis set at data2axis[%d]", i);
+      set_error(E_VM_WRONGVAL, _errstr);
+      return FAILURE;
+    }
+  }
+
+  return SUCCESS;
+}
+
 // test main
 int main(void) {
   int status;
   int i;
   const char *header[] = { "foo", "bar", "moo" };
+  const char *input[] = { "2016-05-11 09:11:28 AM", "10", "11.25" };
+  /* TODO: malloc this and set each to NULL */
+  char *in_hint_args[] = { NULL, NULL, NULL };
+  char *out_hint_args[] = { NULL, NULL, NULL };
   // create space for data2axis
   data2axis = (long *)malloc(sizeof(long) * opt_fields);
   bzero(data2axis, sizeof(long) * opt_fields);
@@ -162,9 +255,18 @@ int main(void) {
   }
   // set store_axis_header
   set_store_axis_header(header);
+  // set function pointers
+  set_store_axis_fnargs(in_hint_args, out_hint_args, input); // called only once for the first input
+  // dump the store
   dump_store();
   //  yaxis **j = st->y_left_arr + 0;
   //printf("%s %p %p %s \n",(*j)->yinfo.name, j, &st->y_left_arr[0], st->y_left_arr[0]->yinfo.name );
+  
+  // free in_hint_args and out_hint_args
+  // TODO...
+  for (i=0; i<opt_fields; i++) {
+    free(in_hint_args[i]);
+  }
   // free
   free(data2axis);
   /* destroy the store */
