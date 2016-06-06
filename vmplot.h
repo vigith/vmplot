@@ -10,6 +10,8 @@
 
 /* Array Increment Size */
 #define VM_ARRAY_SZ    256      /* default array size to store data points */
+/* Field Format Sep btwn Type and Fmt */
+#define VM_FLD_FMT_SEP ':'
 
 /* ERRORS */
 #define E_VM_RANGE     1          /* out of bound array (<0 or >length) */
@@ -34,8 +36,10 @@ char vmplot_errstr[128];
 
 
 /* options */
-extern int opt_fields;          /* how many plots to make */
-extern char *opt_data2axis;     /* data to axis mapping */
+extern int opt_fields;            /* how many plots to make */
+extern char *opt_in_field_hints;  /* hint to field type type[: optional fmt] (eg, INT,FLOAT,TIME:fmt) */
+extern char *opt_out_field_hints; /* hint to field type type[: optional fmt] (eg, INT,FLOAT,TIME:fmt) */
+extern char *opt_data2axis;       /* data to axis mapping */
 /* derived values from options */
 extern int d_xdown_y;           /* number of y variables are plotted againx xdown */
 extern int d_xtop_y;            /* number of y variables are plotted againx xtop */
@@ -44,3 +48,6 @@ extern int d_xtop_cnt;          /* X-top plot count */
 extern int d_yleft_cnt;         /* Y-left plot count */
 extern int d_yright_cnt;        /* Y-right plot count */
 extern int d_axes;              /* axes which are used (derived from opt_data2axis) */
+/* transformation func args */
+extern char *d_in_field_hints[];    /* derived field hints from opt_in_field_hints */
+extern char *d_out_field_hints[];    /* derived field hints from opt_in_field_hints */
