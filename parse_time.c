@@ -23,14 +23,23 @@ char* time_format_hints[] = {
 /* number of elems in array is, (sizeof array) / (size of each element)  */
 size_t time_format_hint_cnt = sizeof(time_format_hints) / sizeof(char*);
 
-void get_format_for_time_ptr(const char *time_str, char **str) {
+/* copy the time format the str after creating enough space (malloc)
+   Args:
+    - time string
+    - pointer to where the time format should be copied
+ */
+void cp_format_for_time(const char *time_str, char **str) {
   int idx = -1;
   idx = get_format_for_time(time_str);
   if (idx == ~0U) {
     *str = NULL;
     return;
   } else {
+    // TODO: return error for malloc
     *str = (char *)malloc(sizeof(char) * strlen(time_format_hints[idx]) + 1); /* space of \0 */
+    if (str == NULL) {          /* callee will handle this */
+      return;
+    }
     strcpy(*str, time_format_hints[idx]);
   }
 

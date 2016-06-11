@@ -1,7 +1,7 @@
 #include "vmplot.h"
 
 /* Variables */
-extern char* time_format_hints[];
+//extern char* time_format_hints[];
 extern size_t time_format_hint_cnt;
 
 /* Functions */
