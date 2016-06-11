@@ -67,17 +67,79 @@ void test_set_data2axis_4(void **state) {
   assert_int_equal(data2axis[4], 16778244); /* 1000000000000010000000100 */
   assert_int_equal(data2axis[5], 0);        /* 0 */
   assert_int_equal(status, SUCCESS);
-  printf(vmplot_errstr);
   return;
 }
 
+/* success */
+void test_set_fnargs_1(void **state) {
+  int status = FAILURE;
+  int i;
+  const char *header[] = { "foo", "bar", "moo" };
+  const char *input[] = { "2016-05-11 09:11:28 AM", "10", "11.25" };
+  char *in_hint_args[] = { NULL, NULL, NULL };
+  char *out_hint_args[] = { NULL, NULL, NULL };
+  opt_fields = 3;
+  opt_data2axis = "D;L:D;L:D";
+  status = set_data2axis();
+  init_store();
+  
+  status = set_store_axis_fnargs(in_hint_args, out_hint_args, input);
+  assert_int_equal(status, SUCCESS);
+  assert_string_equal(in_hint_args[0], "%Y-%m-%d %H:%M:%S %p");
+  /* cleanup in_hint_args */
+  for (i=0; i<opt_fields; i++) {
+    free(in_hint_args[i]);
+    in_hint_args[i] = NULL;
+  }
+
+  // override wrong one via command line (failure)
+  d_in_field_hints[0] = (char *)malloc(sizeof(char) * 50);
+  strcpy(d_in_field_hints[0], "%Y-%m-%d %H:%M:%S"); // TIME# is missing, so we will fail
+  status = set_store_axis_fnargs(in_hint_args, out_hint_args, input);
+  assert_int_equal(status, FAILURE);
+  /* cleanup derived d_in_field_hints */
+  free(d_in_field_hints[0]);
+  d_in_field_hints[0] = NULL;
+  /* cleanup in_hint_args */
+  for (i=0; i<opt_fields; i++) {    
+    free(in_hint_args[i]);
+    in_hint_args[i] = NULL;
+  }
+  
+  // override via command line with format
+  d_in_field_hints[0] = (char *)malloc(sizeof(char) * 50);
+  strcpy(d_in_field_hints[0], "TIME#%Y-%m-%d %H:%M:%S"); // TIME# is missing, still it is okay we will guess it
+  status = set_store_axis_fnargs(in_hint_args, out_hint_args, input);
+  assert_int_equal(status, SUCCESS);
+  assert_string_equal(in_hint_args[0], "%Y-%m-%d %H:%M:%S"); // command line hint matches the value set in set_store_axis_fnargs
+  /* cleanup derived d_in_field_hints */
+  free(d_in_field_hints[0]);
+  d_in_field_hints[0] = NULL;
+  /* cleanup in_hint_args */
+  for (i=0; i<opt_fields; i++) {
+    free(in_hint_args[i]);
+    in_hint_args[i] = NULL;
+  }
+  
+  /* cleanup */
+  destroy_store();
+
+  return;
+}
+
+
+/* failure */
+/* TODO: write one, separate out store */
 /* start the tests */
 int main(int argc, char *argv[]) {
   const UnitTest tests[] = {
+    /* data2axis */
     unit_test_setup_teardown(test_set_data2axis_1, create_data2axis_arr, destroy_data2axis_arr),
     unit_test_setup_teardown(test_set_data2axis_2, create_data2axis_arr, destroy_data2axis_arr),
     unit_test_setup_teardown(test_set_data2axis_3, create_data2axis_arr, destroy_data2axis_arr),
     unit_test_setup_teardown(test_set_data2axis_4, create_data2axis_arr, destroy_data2axis_arr),
+    /* set_store_axis_fnargs */
+    unit_test_setup_teardown(test_set_fnargs_1, create_data2axis_arr, destroy_data2axis_arr),
   };
   return run_tests(tests);
 }
