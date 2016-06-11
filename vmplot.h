@@ -11,15 +11,16 @@
 /* Array Increment Size */
 #define VM_ARRAY_SZ    256      /* default array size to store data points */
 /* Field Format Sep btwn Type and Fmt */
-#define VM_FLD_FMT_SEP ':'
+#define VM_FLD_FMT_SEP '#'
 
 /* ERRORS */
-#define E_VM_RANGE     1          /* out of bound array (<0 or >length) */
-#define E_VM_PARSETIME 2          /* cannot parse time */
-#define E_VM_TIMECONV  3          /* cannot do time conversion */
-#define E_VM_TIMEFMT   4          /* time formatting failed */
-#define E_VM_MALLOC    5          /* malloc failed */
-#define E_VM_WRONGVAL  6          /* wrong value in the variable */
+#define E_VM_RANGE      1          /* out of bound array (<0 or >length) */
+#define E_VM_PARSETIME  2          /* cannot parse time */
+#define E_VM_TIMECONV   3          /* cannot do time conversion */
+#define E_VM_TIMEFMT    4          /* time formatting failed */
+#define E_VM_MALLOC     5          /* malloc failed */
+#define E_VM_WRONGVAL   6          /* wrong value in the variable */
+#define E_VM_NOMANSLAND 6          /* No Man's Land, shouldn't have ever reached here */
 
 /* any system that sets error code, should call clr_error before processing */
 #define clr_error() do { vmplot_errno = 0; vmplot_errstr[0] = '\0'; } while (0)
