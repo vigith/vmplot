@@ -4,9 +4,6 @@
 
 long *data2axis;
 
-void foo(void **tmp) {
-}
-
 /* set the values in data2axis int array using the values
    in opt_data2axis. 
    Args: None
@@ -146,6 +143,7 @@ int set_store_axis_header(const char **fields) {
   return;
 }
 
+
 /* Sets the function pointers for each field that can do
    the input and output transformation. It will also set
    the data_type in the store.
@@ -158,34 +156,36 @@ int set_store_axis_header(const char **fields) {
    ERROR: will set vmplot_errno and vmplot_errstr on error
 */
 int set_store_axis_fnargs(char **in_hint_args, char **out_hint_args, const char **in_fields) {
-  int i;
-  int status;
+  int i;                        /* index into opt_fields */
+  int status;                   /* return status of function calls */
   char *hint;                   /* <TYPE>[:<FORMAT>] */
   char tmphint[128];            /* copy of the hint */
   char *type;                   /* TIME or FLOAT or LONG */
   char *sep;                    /* fmt separator */
   char *fmt;                    /* format */
-  data_type dt;                 /* data type */
+  data_type dt = NOSUCH;        /* data type */
   char _errstr[128];            /* error string for fmt'ing */
+  input_fn ifn;                 /* input function */
+  input_fn_arg ifn_arg;         /* input function arg */
   /* clear error */
   clr_error();
 
-  /* for each field, i can also index data2axis for each field */
+  /* for each field, "i" can also index data2axis for each field */
   for (i = 0; i < opt_fields; i++) {
-    if (d_in_field_hints[i] != NULL) {
+    if (d_in_field_hints[i] != NULL) { /* command line options are given for hint */
       hint = d_in_field_hints[i];
       strcpy(tmphint, hint);    /* copy to a tmp buf, we do inplace manipulation */
       sep = strchr(tmphint, VM_FLD_FMT_SEP); /* find the separator, it might be absent */
       type = tmphint;           /* type = the first part till the separator (later we replace separator with \0) */
       if (sep == NULL) {
-        fmt = NULL;             /* no format, since separator is NULL  */
+        fmt = NULL;             /* no format!, since separator is NULL  */
       } else {
         fmt = sep + 1;          /* format is the next char after the separator */
         *sep = '\0';            /* replace separator by \0 */
       }
       /* set the arg in the in_fields array */
       if (fmt != NULL) {
-        in_hint_args[i] = (char *)malloc(sizeof(char) * strlen(type));
+        in_hint_args[i] = (char *)malloc(sizeof(char) * strlen(fmt) + 1);
         if (in_hint_args[i] == NULL) { /* malloc failed */
           set_error(E_VM_MALLOC, "in_hint_args malloc failed");
           return FAILURE;       /* callee will do the free */
@@ -197,6 +197,10 @@ int set_store_axis_fnargs(char **in_hint_args, char **out_hint_args, const char 
       if (strcmp(type, "LONG") == 0) dt = LONG;
       else if (strcmp(type, "FLOAT") == 0) dt = FLOAT;
       else if (strcmp(type, "TIME") == 0) dt = TIME;
+      else {
+        set_error(E_VM_WRONGVAL, "no type found");
+        return FAILURE;
+      }
     } else {         /* no hint found, lets try to find out ourselves */
       if (status = islong(in_fields[i])) {
         dt = LONG;
@@ -204,41 +208,65 @@ int set_store_axis_fnargs(char **in_hint_args, char **out_hint_args, const char 
         dt = FLOAT;
       } else if (status = istime(in_fields[i], NULL)) {
         dt = TIME;
-        get_format_for_time_ptr(in_fields[i], &in_hint_args[i]);
+        cp_format_for_time(in_fields[i], &in_hint_args[i]);
+        if (in_hint_args[i] == NULL) { /* cp_format_for_time does a malloc */
+          set_error(E_VM_MALLOC, "cp_format_for_time malloc failed");
+          return FAILURE;
+        }
         fmt = NULL;
       } else {
         set_error(E_VM_WRONGVAL, "cannot assign fnptr");
         return FAILURE;
       }
     }
-      
+    
+    /* at this point dt is set to a known value */
+    if (dt == LONG) {
+      ifn = store_str_as_long;
+      ifn_arg.input_data = (char *)in_fields[i];
+      ifn_arg.field2axis = data2axis[i];
+      ifn((void *)&ifn_arg);
+    }
+    else if (dt == FLOAT) ifn = store_str_as_float;
+    else if (dt == TIME) ifn = store_str_as_time;
+    else {                      /* will never read here */
+      set_error(E_VM_NOMANSLAND, "NML: dt not set, abort");
+      return FAILURE;
+    }
+
     /* set the data_type on the store */
     if (data2axis[i] & X_DOWN) {
-      st->x_down->xinfo.d_type = dt;
-      st->x_down->xinfo.t_fns.i_fn = foo;
+      st->x_down->xinfo.d_type = dt; /* set data type */
+      st->x_down->xinfo.t_fns.i_fn = ifn; /* set input function ptr */
     } else if (data2axis[i] & X_TOP) {
       st->x_top->xinfo.d_type = dt;
+      st->x_top->xinfo.t_fns.i_fn = ifn;
     } else if (data2axis[i] & Y_LEFT) {
       st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.d_type = dt;
+      st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.t_fns.i_fn = ifn;
     } else if (data2axis[i] & Y_RIGHT) {
       st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.d_type = dt;
+      st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.t_fns.i_fn = ifn;
     } else {
-      sprintf(_errstr, "wrong axis set at data2axis[%d]", i);
+      sprintf(_errstr, "wrong axis data2axis[%d]", i);
       set_error(E_VM_WRONGVAL, _errstr);
       return FAILURE;
     }
+
+    /* TODO: write for output args */
   }
 
   return SUCCESS;
 }
 
+/*
 // test main
 int main(void) {
   int status;
   int i;
   const char *header[] = { "foo", "bar", "moo" };
   const char *input[] = { "2016-05-11 09:11:28 AM", "10", "11.25" };
-  /* TODO: malloc this and set each to NULL */
+  // TODO: malloc this and set each to NULL
   char *in_hint_args[] = { NULL, NULL, NULL };
   char *out_hint_args[] = { NULL, NULL, NULL };
   // create space for data2axis
@@ -254,7 +282,7 @@ int main(void) {
     return 1;
   }
   // set store_axis_header
-  set_store_axis_header(header);
+set_store_axis_header(header); // TODO: test header
   // set function pointers
   set_store_axis_fnargs(in_hint_args, out_hint_args, input); // called only once for the first input
   // dump the store
@@ -269,8 +297,9 @@ int main(void) {
   }
   // free
   free(data2axis);
-  /* destroy the store */
+// destroy the store
   destroy_store();
   return 0;
 }
 
+*/
