@@ -2,12 +2,23 @@
 
 #include "vmplot.h"
 
+/* used by input transformation func */
+typedef struct {
+  long field2axis;              /* the index of data2axis specific for this field */
+  char *input_data;             /* character pointer to input data */
+} input_fn_arg;
+
+/* used by output transformation func */
+typedef struct {
+  long field2axis;              /* the index of data2axis specific for this field */
+  char *output_data;            /* character pointer to output data */
+} output_fn_arg;
 
 /* tranformation functions */
 /* input tranfsorm */
-typedef void (*input_fn)(void **); /* data */
+typedef int (*input_fn)(void *); /* data */
 /* output tranfsorm */
-typedef void (*output_fn)(void **); /* data */
+typedef int (*output_fn)(void **); /* data */
 
 /* struct holding all the transformation functions for each data point */
 typedef struct {
@@ -23,6 +34,7 @@ typedef enum {
   LONG,                         /* long */
   FLOAT,                        /* float */
   TIME,                         /* time (epoch) */
+  NOSUCH,
 } data_type;
 
 /* types of axes for labelling.
@@ -89,4 +101,13 @@ typedef struct {
 /* GLOBALS */
 /***********/
 extern store *st;
+
+/*************/
+/* FUNCTIONS */
+/*************/
+int init_store(void);
+void destroy_store(void);
+int store_str_as_long(void *);
+int store_str_as_float(void *);
+int store_str_as_time(void *);
 

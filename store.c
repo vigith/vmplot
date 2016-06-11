@@ -10,6 +10,49 @@ void set_label_axis(int *axes) {
   return;
 }
 
+/* stores the given string as a long into the store
+   Args: 
+    - void * to input_fn_arg
+   Returns:
+    - SUCCESS
+    - FAILURE
+   ERROR: will set vmplot_errno and vmplot_errstr on error
+*/
+int store_str_as_long(void *data) {
+  input_fn_arg *arg = (input_fn_arg *)data;
+  printf("%s %d\n", arg->input_data, arg->field2axis);
+  return;
+}
+
+/* stores the given string as a time into the store
+   Args: 
+    - void * to input_fn_arg
+   Returns:
+    - SUCCESS
+    - FAILURE
+   ERROR: will set vmplot_errno and vmplot_errstr on error
+*/
+int store_str_as_float(void *data) {
+  input_fn_arg *arg = (input_fn_arg *)data;
+  printf("%s\n", arg->input_data);
+  return;
+}
+
+/* stores the given string as a time into the store
+   Args: 
+    - void * to input_fn_arg
+   Returns:
+    - SUCCESS
+    - FAILURE
+   ERROR: will set vmplot_errno and vmplot_errstr on error
+*/
+int store_str_as_time(void *data) {
+  input_fn_arg *arg = (input_fn_arg *)data;
+  printf("%s\n", arg->input_data);
+  return;
+}
+
+
 /* intialize the Y-Axis
    The fuction will free all the allocated memory that happened
    in this fuction if there is an error.
