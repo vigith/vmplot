@@ -13,3 +13,10 @@
    XXX: ffs is used to find the right most set bit.
 */
 extern long *data2axis;
+
+/* processing info */
+typedef struct  {
+  long line_no;
+  long lines_skipped;
+  long lines_valid;             /* lines_valid + lines_skipped = line_no */
+} p_info;
