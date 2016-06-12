@@ -6,19 +6,21 @@
 typedef struct {
   long field2axis;              /* the index of data2axis specific for this field */
   char *input_data;             /* character pointer to input data */
+  void *addr;                   /* address to store the data */
 } input_fn_arg;
 
 /* used by output transformation func */
 typedef struct {
   long field2axis;              /* the index of data2axis specific for this field */
   char *output_data;            /* character pointer to output data */
+  void *addr;                   /* address to retrieve the data */
 } output_fn_arg;
 
 /* tranformation functions */
 /* input tranfsorm */
 typedef int (*input_fn)(void *); /* data */
 /* output tranfsorm */
-typedef int (*output_fn)(void **); /* data */
+typedef int (*output_fn)(void *); /* data */
 
 /* struct holding all the transformation functions for each data point */
 typedef struct {
@@ -34,7 +36,7 @@ typedef enum {
   LONG,                         /* long */
   FLOAT,                        /* float */
   TIME,                         /* time (epoch) */
-  NOSUCH,
+  NOSUCH,                       /* error, no such type */
 } data_type;
 
 /* types of axes for labelling.
@@ -64,8 +66,10 @@ typedef struct {
 } info;
 
 /* each datum (data point) */
-typedef struct {
-  void *value;                  /* the real data */
+typedef union {
+    long i_value;
+    float f_value;
+    time_t tm_value;
 } datum;
 
 /* x axis will have a data ptr to all the y data sets */
