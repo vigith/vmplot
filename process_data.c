@@ -137,10 +137,11 @@ int set_store_axis_header(const char **fields) {
     } else {
       sprintf(_errstr, "wrong axis set at data2axis[%d]", i);
       set_error(E_VM_WRONGVAL, _errstr);
+      return FAILURE;
     }
   }
 
-  return;
+  return SUCCESS;
 }
 
 
@@ -221,12 +222,7 @@ int set_store_axis_fnargs(char **in_hint_args, char **out_hint_args, const char 
     }
     
     /* at this point dt is set to a known value */
-    if (dt == LONG) {
-      ifn = store_str_as_long;
-      ifn_arg.input_data = (char *)in_fields[i];
-      ifn_arg.field2axis = data2axis[i];
-      ifn((void *)&ifn_arg);
-    }
+    if (dt == LONG)  ifn = store_str_as_long;
     else if (dt == FLOAT) ifn = store_str_as_float;
     else if (dt == TIME) ifn = store_str_as_time;
     else {                      /* will never read here */
@@ -259,7 +255,7 @@ int set_store_axis_fnargs(char **in_hint_args, char **out_hint_args, const char 
   return SUCCESS;
 }
 
-/*
+/**/
 // test main
 int main(void) {
   int status;
@@ -282,9 +278,11 @@ int main(void) {
     return 1;
   }
   // set store_axis_header
-set_store_axis_header(header); // TODO: test header
+  set_store_axis_header(header); // TODO: test header
   // set function pointers
   set_store_axis_fnargs(in_hint_args, out_hint_args, input); // called only once for the first input
+  // store string
+  store_str(input);
   // dump the store
   dump_store();
   //  yaxis **j = st->y_left_arr + 0;
@@ -297,9 +295,9 @@ set_store_axis_header(header); // TODO: test header
   }
   // free
   free(data2axis);
-// destroy the store
+  // destroy the store
   destroy_store();
   return 0;
 }
 
-*/
+/**/
