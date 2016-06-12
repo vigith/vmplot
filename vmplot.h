@@ -35,7 +35,6 @@
 int vmplot_errno;
 char vmplot_errstr[128];
 
-
 /* options */
 extern int opt_fields;            /* how many plots to make */
 extern char *opt_in_field_hints;  /* hint to field type type[: optional fmt] (eg, INT,FLOAT,TIME:fmt) */

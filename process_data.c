@@ -282,7 +282,8 @@ int main(void) {
   // set function pointers
   set_store_axis_fnargs(in_hint_args, out_hint_args, input); // called only once for the first input
   // store string
-  store_str(input);
+  global_idx = 0;
+  store_str(input, in_hint_args);
   // dump the store
   dump_store();
   //  yaxis **j = st->y_left_arr + 0;
