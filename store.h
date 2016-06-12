@@ -4,9 +4,10 @@
 
 /* used by input transformation func */
 typedef struct {
-  long field2axis;              /* the index of data2axis specific for this field */
+  int index;                    /* the index of field */
   char *input_data;             /* character pointer to input data */
   void *addr;                   /* address to store the data */
+  void *state;
 } input_fn_arg;
 
 /* used by output transformation func */
@@ -14,6 +15,7 @@ typedef struct {
   long field2axis;              /* the index of data2axis specific for this field */
   char *output_data;            /* character pointer to output data */
   void *addr;                   /* address to retrieve the data */
+  void *state;
 } output_fn_arg;
 
 /* tranformation functions */
@@ -67,9 +69,9 @@ typedef struct {
 
 /* each datum (data point) */
 typedef union {
-    long i_value;
-    float f_value;
-    time_t tm_value;
+  long lg_value;
+  float fl_value;
+  time_t tm_value;
 } datum;
 
 /* x axis will have a data ptr to all the y data sets */
@@ -105,6 +107,7 @@ typedef struct {
 /* GLOBALS */
 /***********/
 extern store *st;
+extern long global_idx;                /* current  */
 
 /*************/
 /* FUNCTIONS */
