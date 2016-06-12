@@ -1,6 +1,7 @@
 #include "store.h"
 
 store *st = NULL;               /* start with an NULL pointer, easy to free */
+long *data2axis;
 
 /*  TODO: write it properly
  */
@@ -20,7 +21,8 @@ void set_label_axis(int *axes) {
 */
 int store_str_as_long(void *data) {
   input_fn_arg *arg = (input_fn_arg *)data;
-  printf("%s %d\n", arg->input_data, arg->field2axis);
+  clr_error();
+  printf("long: %s %d\n", arg->input_data, arg->field2axis);
   return;
 }
 
@@ -34,7 +36,8 @@ int store_str_as_long(void *data) {
 */
 int store_str_as_float(void *data) {
   input_fn_arg *arg = (input_fn_arg *)data;
-  printf("%s\n", arg->input_data);
+  clr_error();
+  printf("float: %s\n", arg->input_data);
   return;
 }
 
@@ -48,10 +51,60 @@ int store_str_as_float(void *data) {
 */
 int store_str_as_time(void *data) {
   input_fn_arg *arg = (input_fn_arg *)data;
-  printf("%s\n", arg->input_data);
+  clr_error();
+  *((time_t *)arg->addr) = 10;
+  printf("time: %s\n", arg->input_data);
   return;
 }
 
+/* stores the given string into the store
+   Args: 
+    - void * to input_fn_arg
+   Returns:
+    - SUCCESS
+    - FAILURE
+   ERROR: will set vmplot_errno and vmplot_errstr on error
+*/
+int store_str(char **input) {
+  int i;
+  int status;                   /* status of the function call */
+  input_fn_arg ifn_arg;         /* input function arg */
+  input_fn ifn;                 /* input function */
+  char _errstr[128];            /* error string */
+  void *addr = NULL;
+  
+  clr_error();
+  
+  for (i = 0; i < opt_fields; i++) {
+    /* get the appropriate transformation func */
+    if (data2axis[i] & X_DOWN) {
+      ifn = st->x_down->xinfo.t_fns.i_fn;
+      addr = &st->x_down->row.val[0].tm_value;
+    } else if (data2axis[i] & X_TOP) {
+      ifn = st->x_top->xinfo.t_fns.i_fn;
+    } else if (data2axis[i] & Y_LEFT) {
+      ifn = st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.t_fns.i_fn;
+    } else if (data2axis[i] & Y_RIGHT) {
+      ifn = st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.t_fns.i_fn;
+    } else {
+      sprintf(_errstr, "wrong axis set at data2axis[%d]", i);
+      set_error(E_VM_WRONGVAL, _errstr);
+      return FAILURE;
+    }
+    /* build the struct for calling the input transformation func */
+    ifn_arg.input_data = (char *)input[i];
+    ifn_arg.field2axis = data2axis[i];
+    ifn_arg.addr = addr;
+    /* call the function */
+    status = ifn((void *)&ifn_arg);
+    printf("%d -- %d\n", st->x_down->row.val[0].tm_value, i);
+    if (status == FAILURE) {
+      return FAILURE;           /* errno and errstr will be propagated from the transformation func */
+    }
+  }
+  
+  return;
+}
 
 /* intialize the Y-Axis
    The fuction will free all the allocated memory that happened
