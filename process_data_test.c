@@ -17,6 +17,25 @@ void destroy_data2axis_arr(void **state) {
   free(*state);
 }
 
+void create_test_store(void **state) {
+  int i;
+  data2axis = (long *)malloc(sizeof(long) * 10); /* don't test for more than 10 elements, 10 should be replaced by opt_fields */
+  bzero(data2axis, sizeof(long) * 10);
+  *state = (long *)data2axis;
+
+  // TODO: enable here
+  //  init_store();
+  
+  return;
+}
+
+
+void destroy_test_store(void **state) {
+  // TODO: enable here
+  //  destroy_store();
+  free(*state);
+}
+
 /* success */
 void test_set_data2axis_1(void **state) {
   int status;
@@ -81,11 +100,19 @@ void test_set_fnargs_1(void **state) {
   opt_fields = 3;
   opt_data2axis = "D;L:D;L:D";
   status = set_data2axis();
-  init_store();
+    init_store();
   
   status = set_store_axis_fnargs(in_hint_args, out_hint_args, input);
   assert_int_equal(status, SUCCESS);
   assert_string_equal(in_hint_args[0], "%Y-%m-%d %H:%M:%S %p");
+  /* test xinfo details */
+  assert_int_equal(st->x_down->xinfo.d_type, TIME);
+  assert_int_equal(st->x_down->xinfo.t_fns.i_fn == store_str_as_time, 1);
+  /* test yinfo details */
+  assert_int_equal(st->y_left_arr[0]->yinfo.d_type, LONG); /* index 0 */
+  assert_int_equal(st->y_left_arr[0]->yinfo.t_fns.i_fn == store_str_as_long, 1);
+  assert_int_equal(st->y_left_arr[1]->yinfo.d_type, FLOAT); /* index 1 */
+  assert_int_equal(st->y_left_arr[1]->yinfo.t_fns.i_fn == store_str_as_float, 1);
   /* cleanup in_hint_args */
   for (i=0; i<opt_fields; i++) {
     free(in_hint_args[i]);
@@ -139,7 +166,7 @@ int main(int argc, char *argv[]) {
     unit_test_setup_teardown(test_set_data2axis_3, create_data2axis_arr, destroy_data2axis_arr),
     unit_test_setup_teardown(test_set_data2axis_4, create_data2axis_arr, destroy_data2axis_arr),
     /* set_store_axis_fnargs */
-    unit_test_setup_teardown(test_set_fnargs_1, create_data2axis_arr, destroy_data2axis_arr),
+    unit_test_setup_teardown(test_set_fnargs_1, create_test_store, destroy_test_store),
   };
   return run_tests(tests);
 }
