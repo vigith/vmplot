@@ -2,6 +2,7 @@
 
 store *st = NULL;               /* start with an NULL pointer, easy to free */
 long *data2axis;
+long global_idx;
 
 /*  TODO: write it properly
  */
@@ -21,9 +22,18 @@ void set_label_axis(int *axes) {
 */
 int store_str_as_long(void *data) {
   input_fn_arg *arg = (input_fn_arg *)data;
+  int status;
+  long lg;
+  
   clr_error();
-  printf("long: %s %d\n", arg->input_data, arg->field2axis);
-  return;
+  /* convert to log */
+  status = string_to_long(arg->input_data, &lg);
+  /* return if failure */
+  if (status == FAILURE) return FAILURE;
+  /* store the data */
+  *((long *)arg->addr) = lg;
+
+  return SUCCESS;
 }
 
 /* stores the given string as a time into the store
@@ -36,9 +46,19 @@ int store_str_as_long(void *data) {
 */
 int store_str_as_float(void *data) {
   input_fn_arg *arg = (input_fn_arg *)data;
+  int status;
+  float fl;
+  
   clr_error();
-  printf("float: %s\n", arg->input_data);
-  return;
+  /* convert to float */
+  status = string_to_float(arg->input_data, &fl);
+  /* return if failure */
+  if (status == FAILURE) return FAILURE;
+  
+  /* store the data */
+  *((float *)arg->addr) = fl;
+
+  return SUCCESS;
 }
 
 /* stores the given string as a time into the store
@@ -51,10 +71,21 @@ int store_str_as_float(void *data) {
 */
 int store_str_as_time(void *data) {
   input_fn_arg *arg = (input_fn_arg *)data;
+  time_t tm;
+  char **fmt;
   clr_error();
-  *((time_t *)arg->addr) = 10;
-  printf("time: %s\n", arg->input_data);
-  return;
+  
+  /* we have already found the time format either via CLI hint or using get_format_for_time */
+  fmt = (char **)arg->state;     /* get format from state */
+  /* convert time string to epoch using the fmt stored in the in_hint_args array */
+  tm = convert_time_to_epoch(arg->input_data, -1, fmt[(int)(arg->index)]);
+  /* if error, return. vmplot_err* is already set */
+  if (tm < 0) return FAILURE;
+
+  /* store the data */
+  *((time_t *)arg->addr) = tm;
+
+  return SUCCESS;
 }
 
 /* stores the given string into the store
@@ -65,13 +96,15 @@ int store_str_as_time(void *data) {
     - FAILURE
    ERROR: will set vmplot_errno and vmplot_errstr on error
 */
-int store_str(char **input) {
+int store_str(char **input, void *state) {
   int i;
   int status;                   /* status of the function call */
   input_fn_arg ifn_arg;         /* input function arg */
   input_fn ifn;                 /* input function */
   char _errstr[128];            /* error string */
-  void *addr = NULL;
+  void *addr = NULL;            /* address of the location to store the data */
+  datum *addr_d = NULL;         /* address of the datum which points to datum union */
+  data_type dt = NOSUCH;        /* data type */
   
   clr_error();
   
@@ -79,30 +112,53 @@ int store_str(char **input) {
     /* get the appropriate transformation func */
     if (data2axis[i] & X_DOWN) {
       ifn = st->x_down->xinfo.t_fns.i_fn;
-      addr = &st->x_down->row.val[0].tm_value;
+      addr_d = &st->x_down->row.val[global_idx];
+      dt = st->x_down->xinfo.d_type;
     } else if (data2axis[i] & X_TOP) {
       ifn = st->x_top->xinfo.t_fns.i_fn;
+      addr_d = &st->x_top->row.val[global_idx];
+      dt = st->x_top->xinfo.d_type;
     } else if (data2axis[i] & Y_LEFT) {
       ifn = st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.t_fns.i_fn;
+      addr_d = &st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->val[global_idx];
+      dt = st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.d_type;
     } else if (data2axis[i] & Y_RIGHT) {
       ifn = st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.t_fns.i_fn;
+      dt = st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.d_type;
     } else {
       sprintf(_errstr, "wrong axis set at data2axis[%d]", i);
       set_error(E_VM_WRONGVAL, _errstr);
       return FAILURE;
     }
+
+    if (dt == LONG) addr = &addr_d->lg_value;
+    else if (dt == FLOAT) addr = &addr_d->fl_value;
+    else if (dt == TIME) addr = &addr_d->tm_value;
+    else {
+      set_error(E_VM_NOMANSLAND, "NML:store_str, dt not set");
+      return FAILURE;
+    }
+        
     /* build the struct for calling the input transformation func */
     ifn_arg.input_data = (char *)input[i];
-    ifn_arg.field2axis = data2axis[i];
+    ifn_arg.index = i;
     ifn_arg.addr = addr;
+    ifn_arg.state = state;
     /* call the function */
     status = ifn((void *)&ifn_arg);
-    printf("%d -- %d\n", st->x_down->row.val[0].tm_value, i);
+    /* reset */
+    addr = NULL;
+    addr_d = NULL;
+    dt = NOSUCH;
     if (status == FAILURE) {
       return FAILURE;           /* errno and errstr will be propagated from the transformation func */
     }
   }
   
+  printf("%d ** %d\n", st->x_down->row.val[global_idx].tm_value, i);
+  printf("%d -- %d\n", st->y_left_arr[0]->val[global_idx].lg_value, i);
+  printf("%f -- %d\n", st->y_left_arr[1]->val[global_idx].fl_value, i);
+
   return;
 }
 
