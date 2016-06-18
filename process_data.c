@@ -283,7 +283,12 @@ int main(void) {
   set_store_axis_fnargs(in_hint_args, out_hint_args, input); // called only once for the first input
   // store string
   global_idx = 0;
-  store_str(input, in_hint_args);
+  status = store_str(input, in_hint_args);
+  global_idx++;
+  if (status == SUCCESS) {      /* add 1 more */
+    store_str(input, in_hint_args);
+    global_idx++;      
+  }
   // dump the store
   dump_store();
   //  yaxis **j = st->y_left_arr + 0;
@@ -293,6 +298,7 @@ int main(void) {
   // TODO...
   for (i=0; i<opt_fields; i++) {
     free(in_hint_args[i]);
+    free(out_hint_args[i]);
   }
   // free
   free(data2axis);
