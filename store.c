@@ -124,6 +124,7 @@ int store_str(char **input, void *state) {
       dt = st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.d_type;
     } else if (data2axis[i] & Y_RIGHT) {
       ifn = st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.t_fns.i_fn;
+      addr_d = &st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->val[global_idx];
       dt = st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.d_type;
     } else {
       sprintf(_errstr, "wrong axis set at data2axis[%d]", i);
@@ -155,11 +156,7 @@ int store_str(char **input, void *state) {
     }
   }
   
-  printf("%d ** %d\n", st->x_down->row.val[global_idx].tm_value, i);
-  printf("%d -- %d\n", st->y_left_arr[0]->val[global_idx].lg_value, i);
-  printf("%f -- %d\n", st->y_left_arr[1]->val[global_idx].fl_value, i);
-
-  return;
+  return SUCCESS;
 }
 
 /* intialize the Y-Axis
@@ -425,22 +422,72 @@ void destroy_store(void) {
 /* dump the store */
 void dump_store(void) {
   int i;
+  int j;
   int cnt;
+  void *addr_d;
+  data_type dt = NOSUCH;
+  char _errstr[128];
+  char _tmp[128];
+  
   fprintf(stderr, "---------------------------------- Store Dump ----------------------------------\n");
   fprintf(stderr, "Fields: [%d] X_TOP-to-Y: [%d] X_DOWN-to-Y: [%d]\n", opt_fields, d_xdown_y, d_xtop_y);
   fprintf(stderr, "X_DOWN: [%d] X_TOP: [%d] Y_LEFT: [%d] Y_RIGHT: [%d]\n", d_xdown_cnt, d_xtop_cnt, d_yleft_cnt, d_yright_cnt);
   /* header */
   cnt = d_xdown_cnt;
-  while(cnt--) { fprintf(stderr, "%10s:xd",st->x_down->xinfo.name);}
+  
+  while(cnt--) { sprintf(_tmp, "%s:xd", st->x_down->xinfo.name); fprintf(stderr, "%*s", 20, _tmp);}
   i = 0;
   cnt = d_yleft_cnt;
-  while(cnt--) { fprintf(stderr, "%10s:yl",st->y_left_arr[i++]->yinfo.name); }
+  while(cnt--) { sprintf(_tmp, "%s:yl", st->y_left_arr[i++]->yinfo.name); fprintf(stderr, "%*s", 20, _tmp); }
   cnt=d_xtop_cnt;
-  while(cnt--) { fprintf(stderr, "%10s:yl",st->x_top->xinfo.name);}
+  while(cnt--) { sprintf(_tmp, "%s:xt", st->x_top->xinfo.name); fprintf(stderr, "%*s", 20, _tmp);}
   i = 0;
   cnt=d_yright_cnt;
-  while(cnt--) { fprintf(stderr, "%10s:yr",st->y_right_arr[i++]->yinfo.name); }
+  while(cnt--) { sprintf(_tmp, "%s:yr", st->y_right_arr[i++]->yinfo.name); fprintf(stderr, "%*s", 20, _tmp); }
   fprintf(stderr, "\n");        /* newline after header */
+
+  i = 0;                        /* opt fields */
+  j = 0;                        /* global index */
+  while (j < global_idx) {
+    for (i = 0; i < opt_fields; i++) {
+      if (data2axis[i] & X_DOWN) {
+        addr_d = &st->x_down->row.val[j];
+        dt = st->x_down->xinfo.d_type;        
+      } else if (data2axis[i] & X_TOP) {
+        addr_d = &st->x_top->row.val[j];
+        dt = st->x_top->xinfo.d_type;
+      } else if (data2axis[i] & Y_LEFT) {
+        addr_d = &st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->val[j];
+        dt = st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.d_type;
+      } else if (data2axis[i] & Y_RIGHT) {
+        dt = st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.d_type;
+        addr_d = &st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->val[j];
+      } else {
+        sprintf(_errstr, "wrong axis set at data2axis[%d]", i);
+        set_error(E_VM_WRONGVAL, _errstr);
+        fprintf(stderr, "Abort: %s\n", _errstr);
+        abort();
+      }
+
+      /* print it out */
+      if (dt == TIME) {
+        fprintf(stderr, "%*d", 20, ((datum *)addr_d)->tm_value);
+      } else if (dt == FLOAT) {
+        fprintf(stderr, "%*.3f", 20, ((datum *)addr_d)->fl_value, i, j);
+      } else if (dt == LONG) {
+        fprintf(stderr, "%*d", 20, ((datum *)addr_d)->lg_value);
+      } else {
+        sprintf(_errstr, "wrong datatype at index [%d]", j);
+        fprintf(stderr, "Abort: %s\n", _errstr);
+        abort();
+      }
+    }
+    fprintf(stderr, "\n");
+
+    /* incr global_idx */
+    j++;    
+  }
+  
   return;
 }
 
