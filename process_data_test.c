@@ -156,7 +156,7 @@ void test_set_fnargs_1(void **state) {
 
 
 /* failure */
-/* TODO: write one, separate out store */
+/* TODO: write failure ones, separate out store */
 /* start the tests */
 int main(int argc, char *argv[]) {
   const UnitTest tests[] = {
@@ -170,3 +170,5 @@ int main(int argc, char *argv[]) {
   };
   return run_tests(tests);
 }
+
+// gcc -g -I /usr/local/include/google/ -lcmockery vmplot.h getopts.c store.c parse_values.h parse_values.c parse_time.c parse_time.h process_data.c process_data.h process_data_test.c -o process_data && valgrind --track-origins=yes ./process_data
