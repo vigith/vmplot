@@ -4,6 +4,41 @@
 
 long *data2axis;
 
+/* given the axis, it will return the least value in "long"
+ */
+long get_min_x(data_type dt) {
+  if (dt == X_DOWN) {
+  }
+  return 0;
+}
+
+/* increments the global_idx such that it loops around if the buffer is 
+   circular. If no more memory is available, it will do a realloc.
+   Args: None
+   Returns: 
+    - SUCCESS
+    - FAILURE
+   ERROR: will set vmplot_errno and vmplot_errstr on error
+ */
+int increment_global_idx(void) {
+  clr_error();
+
+  /* else, the way global_idx is incremented depends on whether we are using circular buffer */
+  if (d_cir_buff) {
+    global_idx = ++global_idx % VM_ARRAY_SZ;
+  } else {
+    if (global_idx < mem_allocs * VM_ARRAY_SZ) {
+      global_idx++;
+      return SUCCESS;
+    }
+    /* else realloc */
+  }
+
+  /* will never be here */
+  set_error(E_VM_NOMANSLAND, "NML: increment_global_idx");
+  return FAILURE;
+}
+
 /* set the values in data2axis int array using the values
    in opt_data2axis. 
    Args: None
@@ -284,10 +319,10 @@ int main(void) {
   // store string
   global_idx = 0;
   status = store_str(input, in_hint_args);
-  global_idx++;
+  increment_global_idx();
   if (status == SUCCESS) {      /* add 1 more */
     store_str(input, in_hint_args);
-    global_idx++;      
+    increment_global_idx();
   }
   // dump the store
   dump_store();
@@ -308,3 +343,5 @@ int main(void) {
 }
 
 /**/
+
+// gcc -g -I /usr/local/include/google/ -lcmockery vmplot.h getopts.c store.c parse_values.h parse_values.c parse_time.c parse_time.h process_data.c process_data.h   -o process_data && valgrind ./process_data

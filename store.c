@@ -3,6 +3,7 @@
 store *st = NULL;               /* start with an NULL pointer, easy to free */
 long *data2axis;
 long global_idx;
+int mem_allocs;
 
 /*  TODO: write it properly
  */
@@ -23,15 +24,65 @@ void set_label_axis(int *axes) {
 int store_str_as_long(void *data) {
   input_fn_arg *arg = (input_fn_arg *)data;
   int status;
+  info *_info;
   long lg;
   
   clr_error();
+
+  /* get the infoptr */
+  _info = arg->infoptr;
+
   /* convert to log */
   status = string_to_long(arg->input_data, &lg);
   /* return if failure */
   if (status == FAILURE) return FAILURE;
+
+  /* before we store, we need to make sure whether this is the current
+   * "min" or "max" and set the void * for those properly
+   */
+
+  /* not a circular buffer, so min and max address is always const (or if this is the first circle of the cir buf) */
+  if (!d_cir_buff || *(char*)arg->addr == 1 ) { /* we did a memset of 0x1 after allocating */
+    /* first time */
+    if (_info->min == NULL) _info->min = arg->addr;   /* store to the location where the current data will be stored */
+    else
+      /* store to the location where the current data will be stored, this is the least */
+      if (! *((long *)_info->min) <= lg)
+        _info->min = arg->addr;
+
+    if (_info->max == NULL) _info->max = arg->addr;   /* store to the location where the current data will be stored */
+    else
+      if (! *((long *)_info->max) >= lg)
+        _info->max = arg->addr;
+  } else {
+    /* circular buffer and overwriting is going to happen */
+    /* 2 cases
+     *  - 1. we are NOT overwriting the current min location!
+     *        - is the new value the new min
+     *           - update the min pointer to addr
+     *           - update the addr with value [#]
+     *        - is the new value NOT the new min
+     *              - update the addr with value [#]
+     *  - 2. we are overwriting the current min location!
+     *        - is the new value the new min
+     *           - update the min pointer to addr
+     *           - update the addr with value [#]
+     *        - is the new value NOT the new min
+     *           - are we NOT OVERWRITING the old min postitions
+     *              - update the addr with value [#]
+     *           - are we OVERWRITING the old min postitions
+     *              - we need to find the new min
+     *                 - update the same min location to match the new min
+     *                 - update the addr with value [#]
+     */
+    if (0) {
+    }
+  }
+  
   /* store the data */
   *((long *)arg->addr) = lg;
+
+  printf("%d, %d\n", *(long *)_info->min, *(long *)_info->max);
 
   return SUCCESS;
 }
@@ -105,6 +156,7 @@ int store_str(char **input, void *state) {
   void *addr = NULL;            /* address of the location to store the data */
   datum *addr_d = NULL;         /* address of the datum which points to datum union */
   data_type dt = NOSUCH;        /* data type */
+  info *infoptr = NULL;
   
   clr_error();
   
@@ -114,18 +166,22 @@ int store_str(char **input, void *state) {
       ifn = st->x_down->xinfo.t_fns.i_fn;
       addr_d = &st->x_down->row.val[global_idx];
       dt = st->x_down->xinfo.d_type;
+      infoptr = &st->x_down->xinfo;
     } else if (data2axis[i] & X_TOP) {
       ifn = st->x_top->xinfo.t_fns.i_fn;
       addr_d = &st->x_top->row.val[global_idx];
       dt = st->x_top->xinfo.d_type;
+      infoptr = &st->x_top->xinfo;
     } else if (data2axis[i] & Y_LEFT) {
       ifn = st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.t_fns.i_fn;
       addr_d = &st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->val[global_idx];
       dt = st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.d_type;
+      infoptr = &st->y_left_arr[ffsl(data2axis[i] >> 8)-1]->yinfo;
     } else if (data2axis[i] & Y_RIGHT) {
       ifn = st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.t_fns.i_fn;
       addr_d = &st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->val[global_idx];
       dt = st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo.d_type;
+      infoptr = &st->y_right_arr[ffsl(data2axis[i] >> 8)-1]->yinfo;
     } else {
       sprintf(_errstr, "wrong axis set at data2axis[%d]", i);
       set_error(E_VM_WRONGVAL, _errstr);
@@ -145,6 +201,7 @@ int store_str(char **input, void *state) {
     ifn_arg.index = i;
     ifn_arg.addr = addr;
     ifn_arg.state = state;
+    ifn_arg.infoptr = infoptr;
     /* call the function */
     status = ifn((void *)&ifn_arg);
     /* reset */
@@ -197,6 +254,10 @@ static int init_yaxis(yaxis ***_y, int y_cnt) {
       retcode = FAILURE;
       goto yaxisptrfail;
     }
+
+    /* no min and max */
+    y[i]->yinfo.min = NULL;
+    y[i]->yinfo.max = NULL;
   }
 
   /* for each y-axis plot, create the space to store points */
@@ -207,6 +268,8 @@ static int init_yaxis(yaxis ***_y, int y_cnt) {
       retcode = FAILURE;
       goto yaxisvalfail;
     }
+    /* memset with ^a, so we can know whether it is filled or not (used for circular buffer implementation) */
+    memset(y[i]->val, 1, VM_ARRAY_SZ); /* don't care re: return value */
   }
     
   if(retcode == SUCCESS)
@@ -266,6 +329,13 @@ static int init_xaxis(xaxis **_x, int x_to_y_cnt) {
     retcode = FAILURE;
     goto rowvalfail;
   }
+  /* memset with ^a, so we can know whether it is filled or not (used for circular buffer implementation) */
+  memset(x->row.val, 1, VM_ARRAY_SZ); /* don't care re: return value */
+
+  /* no min and max */
+  x->xinfo.min = NULL;
+  x->xinfo.max = NULL;
+
   /* pointer to y data */
   x->row.index_arr = (int *)(malloc(sizeof(int) * VM_ARRAY_SZ * x_to_y_cnt));
   if (x->row.index_arr == NULL) {
@@ -344,6 +414,8 @@ int init_store(void) {
   int retcode  = SUCCESS;
   /* clear error */
   clr_error();
+
+  mem_allocs = 1;               /* we are going to do the initial alloc */
 
   /* make sure we don't end up in duplicate store creation, singleton? */
   if (st != NULL) {

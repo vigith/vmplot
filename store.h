@@ -2,14 +2,6 @@
 
 #include "vmplot.h"
 
-/* used by input transformation func */
-typedef struct {
-  int index;                    /* the index of field */
-  char *input_data;             /* character pointer to input data */
-  void *addr;                   /* address to store the data */
-  void *state;
-} input_fn_arg;
-
 /* used by output transformation func */
 typedef struct {
   long field2axis;              /* the index of data2axis specific for this field */
@@ -64,6 +56,8 @@ typedef struct {
   void *min;               /* minimum value, depends on "data type" */
   int color[3];            /* RGB color */
   char plot;               /* plot char */
+  int x;                   /* current x postn */
+  int y;                   /* current y postn */
   label_axis l_axis;       /* label axis */
 } info;
 
@@ -77,6 +71,7 @@ typedef union {
 /* x axis will have a data ptr to all the y data sets */
 typedef struct {
   datum *val;     /* value of xaxis point */
+  /* XXX: i really don't need index_arr */
   int *index_arr; /* index of each y data set, pointer to integer array (index is smaller, but ptr will be faster) */
 } table;
 
@@ -101,13 +96,22 @@ typedef struct {
   yaxis **y_right_arr;
 } store;
 
+/* used by input transformation func */
+typedef struct {
+  int index;                    /* the index of field */
+  char *input_data;             /* character pointer to input data */
+  void *addr;                   /* address to store the data */
+  void *state;                  /* pass around the state, eg fmt etc */
+  info *infoptr;                /* pointer to info */
+} input_fn_arg;
 
 
 /***********/
 /* GLOBALS */
 /***********/
 extern store *st;
-extern long global_idx;                /* current  */
+extern long global_idx;         /* current index */
+extern int mem_allocs;          /* mem allocations, starts with 1 */
 
 /*************/
 /* FUNCTIONS */
